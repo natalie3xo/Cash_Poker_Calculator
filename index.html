@@ -345,12 +345,10 @@
 
   <div class="grid-main">
     <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
-        <h2 style="margin:0;">Players</h2>
-        <div class="row" style="flex:0 1 auto;">
-          <input type="text" id="playerName" placeholder="Player name" style="min-width:140px;" />
-          <button id="addPlayerBtn">Add</button>
-        </div>
+      <h2 style="margin:0 0 12px;">Players</h2>
+      <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:nowrap;">
+        <input type="text" id="playerName" placeholder="Player name" style="min-width:140px; flex:0 1 auto;" />
+        <button id="addPlayerBtn">Add</button>
       </div>
       <div id="playersList"></div>
     </div>
