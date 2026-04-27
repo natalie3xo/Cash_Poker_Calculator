@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Poker Cash Game Calculator</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2028;
+    --panel-2: #232b35;
+    --border: #2f3946;
+    --text: #e6edf3;
+    --muted: #8b95a3;
+    --accent: #4ade80;
+    --accent-dim: #22c55e;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #c084fc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 12px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  h1 { margin: 0 0 2px; font-size: 20px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .grid-main {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .grid-2, .grid-main { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  .card h2 { margin: 0 0 8px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+  .field { flex: 1; min-width: 100px; }
+  label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+
+  input.empty-required {
+    border-color: var(--danger);
+    background: rgba(248, 113, 113, 0.08);
+  }
+  input.empty-required::placeholder { color: var(--danger); opacity: 0.7; }
+
+  button {
+    background: var(--accent);
+    color: #0f1419;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  button:hover { background: var(--accent-dim); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+  button.secondary:hover { background: var(--border); }
+  button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); padding: 6px 10px; font-size: 12px; }
+  button.danger:hover { background: var(--danger); color: var(--bg); }
+  button.small { padding: 6px 10px; font-size: 13px; }
+
+  .player {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+  .player-header {
+    display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
+  }
+  .player-name { font-weight: 600; font-size: 16px; flex: 1; min-width: 100px; }
+  .player-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+  .stat { background: var(--panel); padding: 6px 8px; border-radius: 5px; }
+  .stat-label { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+  .stat-value { font-size: 14px; font-weight: 600; margin-top: 1px; }
+
+  .buyin-controls { display: flex; align-items: center; gap: 6px; }
+  .buyin-count {
+    background: var(--blue);
+    color: var(--bg);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .buyin-controls button {
+    width: 28px; height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .input-row {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .input-row label { margin: 0; flex-shrink: 0; }
+  .input-row input { max-width: 140px; }
+
+  .profit { color: var(--accent); font-weight: 700; }
+  .loss { color: var(--danger); font-weight: 700; }
+  .neutral { color: var(--muted); font-weight: 700; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .summary .stat-value { font-size: 18px; }
+
+  .empty { color: var(--muted); font-style: italic; padding: 16px; text-align: center; }
+
+  .balance-msg {
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+  }
+  .balance-msg.warn {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+  .balance-msg.bad {
+    background: rgba(248, 113, 113, 0.1);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .balance-msg.ok {
+    background: rgba(74, 222, 128, 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .balance-msg.info {
+    background: var(--panel-2);
+    color: var(--muted);
+  }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .line-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 10px;
+    align-items: center;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .line-item .desc { font-weight: 600; }
+  .line-item .cost { color: var(--accent); font-weight: 600; min-width: 60px; text-align: right; }
+  .line-item .payer { color: var(--muted); font-size: 13px; }
+  .line-item .split-list { grid-column: 1 / -1; color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  .chip-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip.active {
+    background: rgba(74, 222, 128, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .chip-controls { display: flex; gap: 8px; margin-top: 6px; }
+  .chip-controls button { padding: 4px 10px; font-size: 12px; }
+
+  .shares-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .share-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .share-row.payer { border-color: var(--purple); background: rgba(192, 132, 252, 0.06); }
+  .share-row .name { color: var(--text); }
+  .share-row .name .tag {
+    margin-left: 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--purple);
+    letter-spacing: 0.4px;
+  }
+  .share-row input { width: 100px; padding: 6px 8px; font-size: 13px; text-align: right; }
+  .share-row .auto {
+    width: 100px; padding: 6px 8px; font-size: 13px; text-align: right;
+    color: var(--purple); font-weight: 600;
+    background: var(--panel); border-radius: 6px;
+    border: 1px dashed var(--purple);
+  }
+  .share-balance {
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--muted);
+  }
+  .share-balance.ok { border-color: var(--accent); color: var(--accent); background: rgba(74, 222, 128, 0.08); }
+  .share-balance.bad { border-color: var(--danger); color: var(--danger); background: rgba(248, 113, 113, 0.08); }
+
+  .item-shares {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  @media (max-width: 500px) {
+    .player-name { font-size: 15px; }
+    h1 { font-size: 20px; }
+    .line-item { grid-template-columns: 1fr auto; row-gap: 4px; }
+    .line-item .payer { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Poker Cash Game Calculator</h1>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Summary</h2>
+      <div class="summary">
+        <div class="stat">
+          <div class="stat-label">Total Buy-ins</div>
+          <div class="stat-value" id="totalBuyins">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Money on Table</div>
+          <div class="stat-value" id="totalMoney">£0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Chips on Table</div>
+          <div class="stat-value" id="totalChips">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Final Chips Counted</div>
+          <div class="stat-value" id="countedChips">0</div>
+        </div>
+      </div>
+      <div id="balanceWarning"></div>
+      <div class="actions" style="margin-top:10px;">
+        <button id="resetBtn" class="secondary">Reset Game</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Game Setup</h2>
+      <div class="row">
+        <div class="field">
+          <label for="buyinAmount">Buy-in (£)</label>
+          <input type="number" id="buyinAmount" min="0" step="0.01" value="20" />
+        </div>
+        <div class="field">
+          <label for="chipsPerBuyin">Chips per buy-in</label>
+          <input type="number" id="chipsPerBuyin" min="1" step="1" value="1000" />
+        </div>
+      </div>
+      <div class="sub" id="rateDisplay" style="margin-top:8px; margin-bottom:0;"></div>
+    </div>
+  </div>
+
+  <div class="grid-main">
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+        <h2 style="margin:0;">Players</h2>
+        <div class="row" style="flex:0 1 auto;">
+          <input type="text" id="playerName" placeholder="Player name" style="min-width:140px;" />
+          <button id="addPlayerBtn">Add</button>
+        </div>
+      </div>
+      <div id="playersList"></div>
+    </div>
+
+    <div class="card">
+      <h2>Adjustments</h2>
+      <div class="row">
+        <div class="field" style="flex:2;">
+          <label for="itemDesc">Description</label>
+          <input type="text" id="itemDesc" placeholder="e.g. Dinner" />
+        </div>
+        <div class="field">
+          <label for="itemCost">Cost (£)</label>
+          <input type="number" id="itemCost" min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label for="itemPayer">Paid by</label>
+          <select id="itemPayer"></select>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label>Amount owed by each player</label>
+        <div class="shares-list" id="sharesList"></div>
+        <div class="chip-controls">
+          <button class="secondary" id="splitEqualBtn" type="button">Split equally</button>
+          <button class="secondary" id="splitOthersBtn" type="button">Split among others (payer covers nothing extra)</button>
+          <button class="secondary" id="splitClearBtn" type="button">Clear</button>
+        </div>
+        <div class="share-balance" id="shareBalance">Enter a cost to begin.</div>
+      </div>
+      <div style="margin-top:10px;">
+        <button id="addItemBtn">Add Item</button>
+      </div>
+      <div id="itemsList" style="margin-top:10px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'poker-calc-state-v1';
+
+  const state = loadState() || {
+    buyinAmount: 20,
+    chipsPerBuyin: 1000,
+    players: [],
+    lineItems: [],
+  };
+  if (!Array.isArray(state.lineItems)) state.lineItems = [];
+  // Drop legacy per-player adjustment if present
+  for (const p of state.players) delete p.adjustment;
+  // Migrate line items: convert splitAmong (equal-split) → shares map per player
+  for (const item of state.lineItems) {
+    if (!item.shares || typeof item.shares !== 'object') {
+      const splitAmong = Array.isArray(item.splitAmong) ? item.splitAmong : state.players.map(p => p.id);
+      const share = splitAmong.length > 0 ? item.cost / splitAmong.length : 0;
+      item.shares = {};
+      for (const pid of splitAmong) item.shares[pid] = share;
+    }
+    delete item.splitAmong;
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  }
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  const $buyin = document.getElementById('buyinAmount');
+  const $chips = document.getElementById('chipsPerBuyin');
+  const $playerName = document.getElementById('playerName');
+  const $addBtn = document.getElementById('addPlayerBtn');
+  const $list = document.getElementById('playersList');
+  const $rate = document.getElementById('rateDisplay');
+  const $totalBuyins = document.getElementById('totalBuyins');
+  const $totalMoney = document.getElementById('totalMoney');
+  const $totalChips = document.getElementById('totalChips');
+  const $countedChips = document.getElementById('countedChips');
+  const $balanceWarning = document.getElementById('balanceWarning');
+  const $reset = document.getElementById('resetBtn');
+
+  const $itemDesc = document.getElementById('itemDesc');
+  const $itemCost = document.getElementById('itemCost');
+  const $itemPayer = document.getElementById('itemPayer');
+  const $addItemBtn = document.getElementById('addItemBtn');
+  const $itemsList = document.getElementById('itemsList');
+  const $sharesList = document.getElementById('sharesList');
+  const $splitEqualBtn = document.getElementById('splitEqualBtn');
+  const $splitOthersBtn = document.getElementById('splitOthersBtn');
+  const $splitClearBtn = document.getElementById('splitClearBtn');
+  const $shareBalance = document.getElementById('shareBalance');
+
+  // Draft amounts entered by user (excludes payer — payer's share is auto-derived)
+  // Map<playerId, number>
+  const draftShares = new Map();
+  // Map<playerId, HTMLInputElement | HTMLDivElement> for in-place updates
+  const shareInputs = new Map();
+
+  $buyin.value = state.buyinAmount;
+  $chips.value = state.chipsPerBuyin;
+
+  const playerNodes = new Map();
+
+  $buyin.addEventListener('input', () => {
+    state.buyinAmount = parseFloat($buyin.value) || 0;
+    saveState();
+    updateDerived();
+  });
+  $chips.addEventListener('input', () => {
+    state.chipsPerBuyin = parseInt($chips.value) || 0;
+    saveState();
+    updateDerived();
+  });
+
+  $addBtn.addEventListener('click', addPlayer);
+  $playerName.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addPlayer();
+  });
+
+  $addItemBtn.addEventListener('click', addLineItem);
+  $itemCost.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addLineItem();
+  });
+  $itemDesc.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addLineItem();
+  });
+
+  $itemCost.addEventListener('input', updateShareBalance);
+  $itemPayer.addEventListener('change', renderSharesList);
+
+  $splitEqualBtn.addEventListener('click', () => {
+    const cost = parseFloat($itemCost.value);
+    if (!isFinite(cost) || cost <= 0 || state.players.length === 0) return;
+    const share = cost / state.players.length;
+    draftShares.clear();
+    for (const p of state.players) draftShares.set(p.id, share);
+    renderSharesList();
+  });
+  $splitOthersBtn.addEventListener('click', () => {
+    const cost = parseFloat($itemCost.value);
+    const payerId = parseFloat($itemPayer.value);
+    const others = state.players.filter(p => p.id !== payerId);
+    if (!isFinite(cost) || cost <= 0 || others.length === 0) return;
+    const share = cost / others.length;
+    draftShares.clear();
+    for (const p of others) draftShares.set(p.id, share);
+    // payer share will be auto-shown as 0 (remainder)
+    renderSharesList();
+  });
+  $splitClearBtn.addEventListener('click', () => {
+    draftShares.clear();
+    renderSharesList();
+  });
+
+  $reset.addEventListener('click', () => {
+    if (confirm('Reset the entire game? This will remove all players, line items, and stats.')) {
+      state.players = [];
+      state.lineItems = [];
+      saveState();
+      renderPlayers();
+      renderItems();
+      renderPayerSelect();
+      renderSharesList();
+      updateDerived();
+    }
+  });
+
+  function addPlayer() {
+    const name = $playerName.value.trim();
+    if (!name) return;
+    const newPlayer = {
+      id: Date.now() + Math.random(),
+      name,
+      buyins: 1,
+      finalStack: null,
+    };
+    state.players.push(newPlayer);
+    $playerName.value = '';
+    saveState();
+    renderPlayers();
+    renderPayerSelect();
+    renderSharesList();
+    renderItems();
+    updateDerived();
+  }
+
+  function removePlayer(id) {
+    state.players = state.players.filter(p => p.id !== id);
+    draftShares.delete(id);
+    // Drop line items whose payer is gone; prune removed player from others' shares
+    state.lineItems = state.lineItems
+      .filter(it => state.players.some(p => p.id === it.payerId))
+      .map(it => {
+        const shares = { ...(it.shares || {}) };
+        delete shares[id];
+        return { ...it, shares };
+      });
+    saveState();
+    renderPlayers();
+    renderPayerSelect();
+    renderSharesList();
+    renderItems();
+    updateDerived();
+  }
+
+  function changeBuyins(id, delta) {
+    const p = state.players.find(p => p.id === id);
+    if (!p) return;
+    p.buyins = Math.max(0, p.buyins + delta);
+    saveState();
+    const node = playerNodes.get(id);
+    if (node) node.buyinCount.textContent = p.buyins;
+    updateDerived();
+  }
+
+  function setFinalStack(id, value) {
+    const p = state.players.find(p => p.id === id);
+    if (!p) return;
+    p.finalStack = value === '' || value === null ? null : Math.max(0, parseInt(value) || 0);
+    saveState();
+    updateDerived();
+  }
+
+  function addLineItem() {
+    const desc = $itemDesc.value.trim();
+    const cost = parseFloat($itemCost.value);
+    const payerIdRaw = $itemPayer.value;
+    if (state.players.length === 0) { alert('Add at least one player first.'); return; }
+    if (!desc) { alert('Enter a description.'); return; }
+    if (!isFinite(cost) || cost <= 0) { alert('Enter a positive cost.'); return; }
+    if (!payerIdRaw) { alert('Choose who paid.'); return; }
+
+    const payerId = parseFloat(payerIdRaw);
+    const enteredSum = sumNonPayerDraft(payerId);
+    if (enteredSum > cost + 0.005) {
+      alert(`Entered amounts (£${enteredSum.toFixed(2)}) exceed the cost (£${cost.toFixed(2)}).`);
+      return;
+    }
+    // Build shares: explicit entries from draft, payer gets the remainder
+    const shares = {};
+    for (const p of state.players) {
+      if (p.id === payerId) continue;
+      shares[p.id] = +(draftShares.get(p.id) || 0);
+    }
+    shares[payerId] = +(cost - enteredSum);
+
+    // Sanity: per-line shares must sum to cost (i.e., player adjustments sum to 0)
+    const total = Object.values(shares).reduce((a, b) => a + b, 0);
+    if (Math.abs(total - cost) > 0.005) {
+      alert(`Shares (£${total.toFixed(2)}) do not balance against cost (£${cost.toFixed(2)}).`);
+      return;
+    }
+
+    state.lineItems.push({
+      id: Date.now() + Math.random(),
+      desc,
+      cost,
+      payerId,
+      shares,
+    });
+    $itemDesc.value = '';
+    $itemCost.value = '';
+    draftShares.clear();
+    renderSharesList();
+    saveState();
+    renderItems();
+    updateDerived();
+  }
+
+  function sumNonPayerDraft(payerId) {
+    let s = 0;
+    for (const [pid, v] of draftShares) {
+      if (pid === payerId) continue;
+      if (state.players.some(p => p.id === pid)) s += (+v) || 0;
+    }
+    return s;
+  }
+
+  function removeLineItem(id) {
+    state.lineItems = state.lineItems.filter(it => it.id !== id);
+    saveState();
+    renderItems();
+    updateDerived();
+  }
+
+  function fmtMoney(v) {
+    const sign = v < 0 ? '-' : '';
+    return sign + '£' + Math.abs(v).toFixed(2);
+  }
+
+  function profitClass(v) {
+    if (v > 0.005) return 'profit';
+    if (v < -0.005) return 'loss';
+    return 'neutral';
+  }
+
+  function computeAdjustments() {
+    // Returns Map<playerId, netAdjustment>
+    const adj = new Map();
+    for (const p of state.players) adj.set(p.id, 0);
+    if (state.players.length === 0) return adj;
+    for (const item of state.lineItems) {
+      // Each player owes item.shares[pid]; payer also paid item.cost upfront
+      for (const p of state.players) {
+        const owed = (item.shares && item.shares[p.id]) || 0;
+        adj.set(p.id, adj.get(p.id) - owed);
+      }
+      if (adj.has(item.payerId)) {
+        adj.set(item.payerId, adj.get(item.payerId) + item.cost);
+      }
+    }
+    return adj;
+  }
+
+  function renderSharesList() {
+    $sharesList.innerHTML = '';
+    shareInputs.clear();
+    if (state.players.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.style.padding = '6px 0';
+      empty.textContent = 'Add a player first.';
+      $sharesList.appendChild(empty);
+      updateShareBalance();
+      return;
+    }
+    const payerId = parseFloat($itemPayer.value);
+    for (const p of state.players) {
+      const isPayer = p.id === payerId;
+      const row = document.createElement('div');
+      row.className = 'share-row' + (isPayer ? ' payer' : '');
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = p.name;
+      if (isPayer) {
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = 'payer · auto';
+        nameEl.appendChild(tag);
+      }
+      row.appendChild(nameEl);
+
+      if (isPayer) {
+        const auto = document.createElement('div');
+        auto.className = 'auto';
+        auto.textContent = '£0.00';
+        row.appendChild(auto);
+        shareInputs.set(p.id, auto);
+      } else {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = '0';
+        input.step = '0.01';
+        input.placeholder = '0.00';
+        const val = draftShares.get(p.id);
+        if (val !== undefined && val !== null && val !== 0) input.value = roundForInput(val);
+        input.addEventListener('input', (e) => {
+          const v = parseFloat(e.target.value);
+          if (!isFinite(v) || e.target.value === '') draftShares.set(p.id, 0);
+          else draftShares.set(p.id, Math.max(0, v));
+          updateShareBalance();
+        });
+        row.appendChild(input);
+        shareInputs.set(p.id, input);
+      }
+      $sharesList.appendChild(row);
+    }
+    updateShareBalance();
+  }
+
+  function updateShareBalance() {
+    const cost = parseFloat($itemCost.value);
+    const payerId = parseFloat($itemPayer.value);
+    if (!isFinite(cost) || cost <= 0) {
+      $shareBalance.className = 'share-balance';
+      $shareBalance.textContent = 'Enter a cost to begin.';
+      // Still update payer auto cell if present
+      const payerNode = shareInputs.get(payerId);
+      if (payerNode && payerNode.classList && payerNode.classList.contains('auto')) {
+        payerNode.textContent = '£0.00';
+      }
+      return;
+    }
+    const others = sumNonPayerDraft(payerId);
+    const remainder = cost - others;
+    const payerNode = shareInputs.get(payerId);
+    if (payerNode && payerNode.classList && payerNode.classList.contains('auto')) {
+      payerNode.textContent = (remainder >= 0 ? '' : '-') + '£' + Math.abs(remainder).toFixed(2);
+    }
+    if (others > cost + 0.005) {
+      $shareBalance.className = 'share-balance bad';
+      $shareBalance.textContent = `Over by £${(others - cost).toFixed(2)} — entered shares exceed the cost.`;
+    } else if (Math.abs(remainder) < 0.005) {
+      $shareBalance.className = 'share-balance ok';
+      $shareBalance.textContent = `✓ Balances: shares total £${others.toFixed(2)} of £${cost.toFixed(2)} (payer covers £0).`;
+    } else {
+      $shareBalance.className = 'share-balance';
+      $shareBalance.textContent = `Entered: £${others.toFixed(2)} of £${cost.toFixed(2)} — remaining £${remainder.toFixed(2)} attributed to payer.`;
+    }
+  }
+
+  function roundForInput(v) {
+    if (!v && v !== 0) return '';
+    return (Math.round(v * 100) / 100).toString();
+  }
+
+  function renderPayerSelect() {
+    const prev = $itemPayer.value;
+    $itemPayer.innerHTML = '';
+    if (state.players.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = '— add a player first —';
+      $itemPayer.appendChild(opt);
+      $itemPayer.disabled = true;
+      return;
+    }
+    $itemPayer.disabled = false;
+    for (const p of state.players) {
+      const opt = document.createElement('option');
+      opt.value = String(p.id);
+      opt.textContent = p.name;
+      $itemPayer.appendChild(opt);
+    }
+    if (prev && state.players.some(p => String(p.id) === prev)) {
+      $itemPayer.value = prev;
+    }
+  }
+
+  function renderPlayers() {
+    playerNodes.clear();
+    $list.innerHTML = '';
+    if (state.players.length === 0) {
+      $list.innerHTML = '<div class="empty">No players yet. Add one above to get started.</div>';
+      return;
+    }
+    for (const p of state.players) {
+      $list.appendChild(createPlayerNode(p));
+    }
+  }
+
+  function createPlayerNode(p) {
+    const el = document.createElement('div');
+    el.className = 'player';
+    el.innerHTML = `
+      <div class="player-header">
+        <div class="player-name"></div>
+        <div class="buyin-controls">
+          <button class="secondary" data-act="dec">−</button>
+          <span class="buyin-count"></span>
+          <button data-act="inc">+</button>
+        </div>
+        <button class="danger" data-act="remove">Remove</button>
+      </div>
+      <div class="player-stats">
+        <div class="stat">
+          <div class="stat-label">Money In</div>
+          <div class="stat-value" data-fld="moneyIn">£0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Chips In</div>
+          <div class="stat-value" data-fld="chipsIn">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Cash Out</div>
+          <div class="stat-value" data-fld="cashOut">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Adjustment</div>
+          <div class="stat-value" data-fld="adjustment">£0.00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Net P / L</div>
+          <div class="stat-value" data-fld="pnl">—</div>
+        </div>
+      </div>
+      <div class="input-row">
+        <label>Final stack (chips):</label>
+        <input type="number" min="0" step="1" placeholder="—" data-act="final" />
+      </div>
+    `;
+
+    el.querySelector('.player-name').textContent = p.name;
+    const buyinCount = el.querySelector('.buyin-count');
+    buyinCount.textContent = p.buyins;
+
+    const finalInput = el.querySelector('[data-act="final"]');
+    if (p.finalStack !== null && p.finalStack !== undefined) finalInput.value = p.finalStack;
+    finalInput.classList.toggle('empty-required', !finalInput.value);
+    finalInput.addEventListener('input', (e) => {
+      setFinalStack(p.id, e.target.value);
+      e.target.classList.toggle('empty-required', !e.target.value);
+    });
+
+    el.querySelector('[data-act="inc"]').addEventListener('click', () => changeBuyins(p.id, 1));
+    el.querySelector('[data-act="dec"]').addEventListener('click', () => changeBuyins(p.id, -1));
+    el.querySelector('[data-act="remove"]').addEventListener('click', () => {
+      if (confirm(`Remove ${p.name}?`)) removePlayer(p.id);
+    });
+
+    playerNodes.set(p.id, {
+      el,
+      buyinCount,
+      moneyIn: el.querySelector('[data-fld="moneyIn"]'),
+      chipsIn: el.querySelector('[data-fld="chipsIn"]'),
+      cashOut: el.querySelector('[data-fld="cashOut"]'),
+      adjustment: el.querySelector('[data-fld="adjustment"]'),
+      pnl: el.querySelector('[data-fld="pnl"]'),
+    });
+
+    return el;
+  }
+
+  function renderItems() {
+    $itemsList.innerHTML = '';
+    if (state.lineItems.length === 0) {
+      $itemsList.innerHTML = '<div class="empty">No line items yet.</div>';
+      return;
+    }
+    for (const item of state.lineItems) {
+      const payer = state.players.find(p => p.id === item.payerId);
+      const shareEntries = state.players
+        .filter(p => (item.shares && item.shares[p.id] > 0.005))
+        .map(p => `${p.name} £${item.shares[p.id].toFixed(2)}`);
+      const sharesText = shareEntries.length > 0
+        ? 'shares: ' + shareEntries.join(', ')
+        : 'no shares recorded';
+
+      const row = document.createElement('div');
+      row.className = 'line-item';
+      row.innerHTML = `
+        <div class="desc"></div>
+        <div class="payer"></div>
+        <div class="cost"></div>
+        <button class="danger" data-act="remove">Remove</button>
+        <div class="split-list"></div>
+      `;
+      row.querySelector('.desc').textContent = item.desc;
+      row.querySelector('.payer').textContent = 'paid by ' + (payer ? payer.name : '?');
+      row.querySelector('.cost').textContent = fmtMoney(item.cost);
+      row.querySelector('.split-list').textContent = sharesText;
+      row.querySelector('[data-act="remove"]').addEventListener('click', () => removeLineItem(item.id));
+      $itemsList.appendChild(row);
+    }
+  }
+
+  function updateDerived() {
+    const buyinAmount = state.buyinAmount;
+    const chipsPerBuyin = state.chipsPerBuyin;
+
+    $rate.textContent = `£${buyinAmount.toFixed(2)} = ${chipsPerBuyin.toLocaleString()} chips ` +
+      (chipsPerBuyin > 0 ? `(£${(buyinAmount / chipsPerBuyin).toFixed(4)} per chip)` : '');
+
+    const adjustments = computeAdjustments();
+
+    let totalBuyins = 0;
+    let countedChips = 0;
+    let countedAny = false;
+
+    for (const p of state.players) {
+      const node = playerNodes.get(p.id);
+      const totalIn = p.buyins * buyinAmount;
+      const totalChipsIn = p.buyins * chipsPerBuyin;
+      const hasFinal = p.finalStack !== null && p.finalStack !== undefined;
+      const cashOut = hasFinal && chipsPerBuyin > 0
+        ? (p.finalStack / chipsPerBuyin) * buyinAmount
+        : null;
+      const adj = adjustments.get(p.id) || 0;
+      const pnl = cashOut !== null ? (cashOut - totalIn + adj) : null;
+
+      totalBuyins += p.buyins;
+      if (hasFinal) {
+        countedChips += p.finalStack;
+        countedAny = true;
+      }
+
+      if (node) {
+        node.moneyIn.textContent = fmtMoney(totalIn);
+        node.chipsIn.textContent = totalChipsIn.toLocaleString();
+        node.cashOut.textContent = cashOut !== null ? fmtMoney(cashOut) : '—';
+        node.adjustment.textContent = (adj >= 0 ? '+' : '') + fmtMoney(adj);
+        node.adjustment.className = 'stat-value ' + profitClass(adj);
+        if (pnl !== null) {
+          node.pnl.textContent = (pnl >= 0 ? '+' : '') + fmtMoney(pnl);
+          node.pnl.className = 'stat-value ' + profitClass(pnl);
+        } else {
+          node.pnl.textContent = '—';
+          node.pnl.className = 'stat-value';
+        }
+      }
+    }
+
+    const totalMoney = totalBuyins * buyinAmount;
+    const totalChips = totalBuyins * chipsPerBuyin;
+
+    $totalBuyins.textContent = totalBuyins;
+    $totalMoney.textContent = fmtMoney(totalMoney);
+    $totalChips.textContent = totalChips.toLocaleString();
+    $countedChips.textContent = countedAny ? countedChips.toLocaleString() : '—';
+
+    $balanceWarning.innerHTML = renderBalanceMsg({
+      hasPlayers: state.players.length > 0,
+      totalChips,
+      countedChips,
+      countedAny,
+      missingCount: state.players.filter(p => p.finalStack === null || p.finalStack === undefined).length,
+      totalPlayers: state.players.length,
+    });
+  }
+
+  function renderBalanceMsg({ hasPlayers, totalChips, countedChips, countedAny, missingCount, totalPlayers }) {
+    if (!hasPlayers || totalChips <= 0) return '';
+    const diff = countedChips - totalChips;
+    const diffStr = (diff > 0 ? '+' : '') + diff.toLocaleString();
+    if (missingCount > 0) {
+      // Partial: show running total and what's left to account for
+      if (!countedAny) {
+        return `<div class="balance-msg info">Expected total: <strong>${totalChips.toLocaleString()}</strong> chips. No final stacks entered yet.</div>`;
+      }
+      const remaining = totalChips - countedChips;
+      const remainingStr = remaining >= 0
+        ? `${remaining.toLocaleString()} chips still to account for across ${missingCount} player${missingCount === 1 ? '' : 's'}`
+        : `already <strong>${(-remaining).toLocaleString()} over</strong> the expected total with ${missingCount} player${missingCount === 1 ? '' : 's'} still to enter`;
+      const cls = remaining >= 0 ? 'info' : 'bad';
+      return `<div class="balance-msg ${cls}">Counted <strong>${countedChips.toLocaleString()}</strong> / <strong>${totalChips.toLocaleString()}</strong> — ${remainingStr}.</div>`;
+    }
+    // All entered
+    if (diff === 0) {
+      return `<div class="balance-msg ok">✓ Stacks balance: <strong>${countedChips.toLocaleString()}</strong> chips counted = <strong>${totalChips.toLocaleString()}</strong> expected.</div>`;
+    }
+    return `<div class="balance-msg bad">⚠ Final chip count is off by <strong>${diffStr}</strong> chips (counted ${countedChips.toLocaleString()}, expected ${totalChips.toLocaleString()}). Recount before settling.</div>`;
+  }
+
+  renderPlayers();
+  renderPayerSelect();
+  renderSharesList();
+  renderItems();
+  updateDerived();
+})();
+</script>
+</body>
+</html>
